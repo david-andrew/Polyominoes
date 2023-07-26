@@ -44,7 +44,13 @@ def main(dim:int):
         prev_shapes = build_shapes_tensor(prev_level, pad=1)
 
         successors = generate_successors(prev_shapes, dim)
-        successors = successors.reshape(prod(successors.shape[:2]), *successors.shape[2:])
+
+        #compute the bounding box of each successor
+        # bounds = torch.zeros(successors.shape[0:1] + (2,)*dim)
+        # for i in range(dim):
+        #     ...
+        bounds = compute_bounding_boxes(successors, dim)
+
 
 
         #for each successor shape:
@@ -78,6 +84,7 @@ def generate_successors(prev_shapes: torch.Tensor, dim:int) -> torch.Tensor:
 
     # merge in the previous shapes with the successor spots to get all successors
     successors = successors | prev_shapes
+    successors = successors.reshape(-1, *prev_shapes.shape[1:])
 
     return successors
 
@@ -105,6 +112,18 @@ def shape_from_hash(H: int, dims:tuple[int]) -> torch.Tensor:
 
     return shape
 
+
+def compute_bounding_boxes(shapes:torch.Tensor, dim:int):
+    pdb.set_trace()
+    bounds = torch.zeros((len(shapes),) + (2,)*dim, dtype=torch.int64)
+
+    bounds = torch.zeros(shapes.shape[0], dim, 2, dtype=torch.int64)
+    for i in range(shapes.shape[0]):
+        indices = torch.where(shapes[i])
+        for dim in range(dim):
+            bounds[i, dim, 0] = torch.min(indices[dim])
+            bounds[i, dim, 1] = torch.max(indices[dim]) + 1
+    return bounds
 
 
 
